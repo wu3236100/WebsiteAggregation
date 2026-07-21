@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI聚合</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Tab bar -->
+  <div id="tabbar">
+    <div id="tabs-container"></div>
+    <div id="dropdown-container">
+      <button id="btn-dropdown" class="control-btn" title="更多站点">▼</button>
+      <div id="dropdown-menu" class="dropdown-menu hidden"></div>
+    </div>
+    <div id="window-controls">
+      <button id="btn-refresh" class="control-btn" title="刷新">↻</button>
+      <button id="btn-minimize" class="control-btn" title="最小化">─</button>
+      <button id="btn-maximize" class="control-btn" title="最大化">□</button>
+      <button id="btn-close" class="control-btn btn-close" title="关闭">✕</button>
+    </div>
+  </div>
+
+  <!-- Webview container -->
+  <div id="webview-container"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

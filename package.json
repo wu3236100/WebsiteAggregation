@@ -1,0 +1,39 @@
+{
+  "name": "website-aggregation-electron",
+  "version": "1.0.0",
+  "description": "AI网站聚合工具",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir",
+    "build:portable": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.website-aggregation.electron",
+    "productName": "WebsiteAggregation",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "src/main/main.js",
+      "src/preload/preload.js",
+      "src/renderer/**/*",
+      "appsettings.json"
+    ],
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "devDependencies": {
+    "electron": "43.1.1",
+    "electron-builder": "^26.15.3"
+  }
+}
