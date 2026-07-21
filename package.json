@@ -5,9 +5,16 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win",
-    "build:dir": "electron-builder --win --dir",
-    "build:portable": "electron-builder --win portable"
+    "build:win": "electron-builder --win",
+    "build:win:dir": "electron-builder --win --dir",
+    "build:win:portable": "electron-builder --win portable",
+    "build:linux": "electron-builder --linux",
+    "build:linux:deb": "electron-builder --linux deb",
+    "build:linux:appimage": "electron-builder --linux AppImage",
+    "build:mac": "electron-builder --mac",
+    "build:mac:dmg": "electron-builder --mac dmg",
+    "build:mac:zip": "electron-builder --mac zip",
+    "build:all": "electron-builder --win --linux --mac"
   },
   "build": {
     "appId": "com.website-aggregation.electron",
@@ -15,6 +22,16 @@
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "assets/icon.png",
+      "category": "Utility"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities"
     },
     "nsis": {
       "oneClick": false,
