@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -76,6 +76,26 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // ================= 核心修改：绕过 Google 浏览器安全检查 =================
+  // 1. 获取当前默认的 User-Agent
+  let currentUA = session.defaultSession.getUserAgent();
+
+  // 2. 利用正则精准剔除 Electron 及其版本号
+  let cleanUA = currentUA.replace(/Electron\/[a-zA-Z0-9.-]+\s?/, '');
+
+  // 3. 全局设置 Fallback，这将应用于后续创建的所有 BrowserWindow 和 <webview>
+  app.userAgentFallback = cleanUA;
+  session.defaultSession.setUserAgent(cleanUA);
+
+  // 4. 拦截 HTTP 请求，清理可能被 Google 嗅探到的底层环境标头 (sec-ch-ua)
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    details.requestHeaders['User-Agent'] = cleanUA;
+    // 移除暴露应用身份的特有标头
+    delete details.requestHeaders['sec-ch-ua'];
+    callback({ requestHeaders: details.requestHeaders });
+  });
+  // =====================================================================
+
   createWindow();
 
   app.on('activate', () => {
