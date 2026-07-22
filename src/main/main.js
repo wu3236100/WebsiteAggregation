@@ -17,6 +17,7 @@ if (!gotTheLock) {
 
 let mainWindow;
 const stateFile = path.join(app.getPath('userData'), 'window-state.json');
+const configPath = path.join(app.getPath('userData'), 'appsettings.json');
 
 function loadWindowState() {
   try {
@@ -110,8 +111,14 @@ app.on('window-all-closed', () => {
 // --- IPC Handlers ---
 
 ipcMain.handle('get-app-config', () => {
-  const configPath = path.join(__dirname, '..', '..', 'appsettings.json');
-  return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  } catch {
+    const bundledPath = path.join(__dirname, '..', '..', 'appsettings.json');
+    const config = JSON.parse(fs.readFileSync(bundledPath, 'utf-8'));
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    return config;
+  }
 });
 
 ipcMain.handle('get-window-state', () => {
@@ -144,7 +151,6 @@ ipcMain.on('window-minimize', () => {
 });
 
 ipcMain.handle('save-app-config', (_event, config) => {
-  const configPath = path.join(__dirname, '..', '..', 'appsettings.json');
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
   return true;
 });

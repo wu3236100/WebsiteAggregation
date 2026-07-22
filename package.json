@@ -1,5 +1,5 @@
 {
-  "name": "website-aggregation-electron",
+  "name": "website-aggregation",
   "version": "1.0.0",
   "description": "AI网站聚合工具",
   "main": "src/main/main.js",
