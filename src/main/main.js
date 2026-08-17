@@ -19,6 +19,42 @@ let mainWindow;
 const stateFile = path.join(app.getPath('userData'), 'window-state.json');
 const configPath = path.join(app.getPath('userData'), 'appsettings.json');
 
+function loadConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  } catch {
+    const bundledPath = path.join(__dirname, '..', '..', 'appsettings.json');
+    const config = JSON.parse(fs.readFileSync(bundledPath, 'utf-8'));
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    return config;
+  }
+}
+
+// 应用 HTTP 代理到 defaultSession（所有 <webview> 继承该会话）
+async function applyProxy() {
+  const proxy = loadConfig().proxy || { enabled: false };
+  if (proxy.enabled && proxy.host && proxy.port) {
+    const proxyRules = `${proxy.host}:${proxy.port}`;
+    await session.defaultSession.setProxy({
+      mode: 'fixed_servers',
+      proxyRules,
+      proxyBypassRules: '<local>',
+    });
+    session.defaultSession.removeAllListeners('login');
+    session.defaultSession.on('login', (event, _request, _authInfo, callback) => {
+      if (proxy.username) {
+        event.preventDefault();
+        callback(proxy.username, proxy.password || '');
+      }
+    });
+    console.log(`[Proxy] HTTP 代理已启用: ${proxyRules}`);
+  } else {
+    await session.defaultSession.setProxy({ mode: 'direct' });
+    session.defaultSession.removeAllListeners('login');
+    console.log('[Proxy] HTTP 代理已禁用');
+  }
+}
+
 function loadWindowState() {
   try {
     return JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
@@ -76,7 +112,7 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // ================= 核心修改：绕过 Google 浏览器安全检查 =================
   // 1. 获取当前默认的 User-Agent
   let currentUA = session.defaultSession.getUserAgent();
@@ -97,6 +133,8 @@ app.whenReady().then(() => {
   });
   // =====================================================================
 
+  await applyProxy();
+
   createWindow();
 
   app.on('activate', () => {
@@ -111,14 +149,7 @@ app.on('window-all-closed', () => {
 // --- IPC Handlers ---
 
 ipcMain.handle('get-app-config', () => {
-  try {
-    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  } catch {
-    const bundledPath = path.join(__dirname, '..', '..', 'appsettings.json');
-    const config = JSON.parse(fs.readFileSync(bundledPath, 'utf-8'));
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    return config;
-  }
+  return loadConfig();
 });
 
 ipcMain.handle('get-window-state', () => {
@@ -150,7 +181,8 @@ ipcMain.on('window-minimize', () => {
   mainWindow.minimize();
 });
 
-ipcMain.handle('save-app-config', (_event, config) => {
+ipcMain.handle('save-app-config', async (_event, config) => {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+  await applyProxy();
   return true;
 });

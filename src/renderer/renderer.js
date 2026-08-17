@@ -189,6 +189,15 @@ function updateDropdownMenu() {
   });
   dropdownMenu.appendChild(settingsItem);
 
+  const proxyItem = document.createElement('div');
+  proxyItem.className = 'dropdown-item dropdown-settings';
+  proxyItem.textContent = '🌐 代理设置';
+  proxyItem.addEventListener('click', () => {
+    openProxyDialog();
+    dropdownMenu.classList.add('hidden');
+  });
+  dropdownMenu.appendChild(proxyItem);
+
   btnDropdown.style.display = 'flex';
 }
 
@@ -560,6 +569,113 @@ function openSettingsDialog() {
   overlay.appendChild(modal);
 
   // Close on overlay click
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+
+  document.body.appendChild(overlay);
+}
+
+function openProxyDialog() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-container';
+  modal.style.width = '420px';
+
+  const header = document.createElement('div');
+  header.className = 'modal-header';
+  const title = document.createElement('span');
+  title.textContent = '代理设置';
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'modal-close';
+  closeBtn.textContent = '✕';
+  closeBtn.addEventListener('click', () => overlay.remove());
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+
+  const body = document.createElement('div');
+  body.className = 'modal-body';
+
+  const proxy = currentConfig.proxy || {};
+  const enableInput = document.createElement('input');
+  enableInput.type = 'checkbox';
+  enableInput.checked = !!proxy.enabled;
+
+  const hostInput = document.createElement('input');
+  hostInput.type = 'text';
+  hostInput.placeholder = '127.0.0.1';
+  hostInput.value = proxy.host || '';
+
+  const portInput = document.createElement('input');
+  portInput.type = 'number';
+  portInput.placeholder = '7890';
+  portInput.min = '1';
+  portInput.max = '65535';
+  portInput.value = proxy.port || '';
+
+  const usernameInput = document.createElement('input');
+  usernameInput.type = 'text';
+  usernameInput.placeholder = '可选';
+  usernameInput.value = proxy.username || '';
+
+  const passwordInput = document.createElement('input');
+  passwordInput.type = 'password';
+  passwordInput.placeholder = '可选';
+  passwordInput.value = proxy.password || '';
+
+  const form = document.createElement('div');
+  form.className = 'proxy-form';
+
+  function makeRow(label, input) {
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    const labelEl = document.createElement('label');
+    labelEl.textContent = label;
+    row.appendChild(labelEl);
+    row.appendChild(input);
+    return row;
+  }
+
+  form.appendChild(makeRow('启用代理', enableInput));
+  form.appendChild(makeRow('代理地址', hostInput));
+  form.appendChild(makeRow('代理端口', portInput));
+  form.appendChild(makeRow('用户名', usernameInput));
+  form.appendChild(makeRow('密码', passwordInput));
+
+  const hint = document.createElement('div');
+  hint.className = 'form-hint';
+  hint.textContent = '启用后所有网页（webview）都会通过该 HTTP 代理访问。';
+  form.appendChild(hint);
+
+  body.appendChild(form);
+
+  const footer = document.createElement('div');
+  footer.className = 'modal-footer';
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn-save-all';
+  saveBtn.textContent = '保存';
+  saveBtn.addEventListener('click', async () => {
+    const port = parseInt(portInput.value, 10);
+    currentConfig.proxy = {
+      enabled: enableInput.checked,
+      host: hostInput.value.trim(),
+      port: Number.isFinite(port) ? port : 0,
+      username: usernameInput.value.trim(),
+      password: passwordInput.value,
+    };
+    await window.electronAPI.saveAppConfig(currentConfig);
+    overlay.remove();
+    refreshUI();
+  });
+  footer.appendChild(saveBtn);
+
+  modal.appendChild(header);
+  modal.appendChild(body);
+  modal.appendChild(footer);
+  overlay.appendChild(modal);
+
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.remove();
   });
