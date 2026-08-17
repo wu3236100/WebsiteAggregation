@@ -55,6 +55,29 @@ async function applyProxy() {
   }
 }
 
+// 在 webview 内拦截查找快捷键，转发给渲染进程打开查找栏
+function setupWebviewFindShortcuts() {
+  app.on('web-contents-created', (_event, contents) => {
+    if (contents.getType() !== 'webview') return;
+
+    contents.on('before-input-event', (event, input) => {
+      if (input.type !== 'keyDown') return;
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+
+      const mod = input.control || input.meta;
+      const key = input.key.toLowerCase();
+
+      if (mod && key === 'f') {
+        event.preventDefault();
+        mainWindow.webContents.send('find-command', 'open');
+      } else if (key === 'f3' || (mod && key === 'g')) {
+        event.preventDefault();
+        mainWindow.webContents.send('find-command', input.shift ? 'previous' : 'next');
+      }
+    });
+  });
+}
+
 // 为所有 <webview> 添加右键菜单（Electron 默认没有）
 function setupWebviewContextMenu() {
   app.on('web-contents-created', (_event, contents) => {
@@ -205,6 +228,7 @@ app.whenReady().then(async () => {
   await applyProxy();
 
   setupWebviewContextMenu();
+  setupWebviewFindShortcuts();
   setupDownloads();
 
   createWindow();

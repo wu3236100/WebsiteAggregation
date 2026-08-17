@@ -10,4 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMaximizeChange: (callback) => {
     ipcRenderer.on('maximize-change', (_event, isMaximized) => callback(isMaximized));
   },
+  onFindCommand: (callback) => {
+    ipcRenderer.on('find-command', (_event, command) => callback(command));
+  },
 });

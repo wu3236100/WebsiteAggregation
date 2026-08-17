@@ -490,6 +490,60 @@ body {
   display: flex;
 }
 
+/* --- Find bar --- */
+#find-bar {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  padding: 4px 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+#find-input {
+  width: 200px;
+  padding: 4px 8px;
+  background: #1e1e1e;
+  border: 1px solid #404040;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+
+#find-input:focus {
+  border-color: #0078d4;
+}
+
+#find-count {
+  min-width: 40px;
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+}
+
+#find-prev, #find-next, #find-close {
+  width: 26px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+#find-prev:hover, #find-next:hover, #find-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
 /* --- Proxy settings form --- */
 .proxy-form {
   display: flex;

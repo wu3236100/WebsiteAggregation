@@ -6,6 +6,12 @@ const btnMinimize = document.getElementById('btn-minimize');
 const btnRefresh = document.getElementById('btn-refresh');
 const btnDropdown = document.getElementById('btn-dropdown');
 const dropdownMenu = document.getElementById('dropdown-menu');
+const findBar = document.getElementById('find-bar');
+const findInput = document.getElementById('find-input');
+const findCount = document.getElementById('find-count');
+const findPrevBtn = document.getElementById('find-prev');
+const findNextBtn = document.getElementById('find-next');
+const findCloseBtn = document.getElementById('find-close');
 
 let activeIndex = -1;
 let webviews = [];
@@ -232,6 +238,12 @@ function activateTab(index) {
     const wv = document.createElement('webview');
     wv.setAttribute('src', site.url);
     wv.setAttribute('autosize', 'on');
+    wv.addEventListener('found-in-page', (e) => {
+      if (!findBar.classList.contains('hidden')) {
+        const { matches, activeMatchOrdinal } = e.result;
+        findCount.textContent = matches > 0 ? `${activeMatchOrdinal}/${matches}` : '0/0';
+      }
+    });
     container.appendChild(wv);
     webviews[index] = wv;
   }
@@ -243,6 +255,11 @@ function activateTab(index) {
     newTab.classList.add('active');
   }
   webviews[index].classList.add('active');
+
+  // 切换标签时若查找栏打开，在目标页面重新查找
+  if (!findBar.classList.contains('hidden') && findInput.value) {
+    findInActive(findInput.value, 'findNext');
+  }
 }
 
 function refreshUI() {
@@ -666,5 +683,106 @@ function openSettingsDialog() {
 
   document.body.appendChild(overlay);
 }
+
+// --- 页面内查找 ---
+
+function getActiveWebview() {
+  return activeIndex >= 0 ? webviews[activeIndex] : null;
+}
+
+function openFindBar() {
+  findBar.classList.remove('hidden');
+  findInput.focus();
+  findInput.select();
+  if (findInput.value) {
+    findInActive(findInput.value, 'findNext');
+  }
+}
+
+function closeFindBar() {
+  const wv = getActiveWebview();
+  if (wv) {
+    try { wv.stopFindInPage('clearSelection'); } catch {}
+  }
+  findBar.classList.add('hidden');
+  findInput.value = '';
+  findCount.textContent = '';
+}
+
+function findInActive(text, mode) {
+  const wv = getActiveWebview();
+  if (!wv || !text) return;
+  wv.findInPage(text, { forward: mode !== 'findPrevious', findNext: true });
+}
+
+function findNext() {
+  const wv = getActiveWebview();
+  if (!wv) return;
+  if (findInput.value) {
+    findInActive(findInput.value, 'findNext');
+  } else {
+    openFindBar();
+  }
+}
+
+function findPrevious() {
+  const wv = getActiveWebview();
+  if (!wv) return;
+  if (findInput.value) {
+    findInActive(findInput.value, 'findPrevious');
+  } else {
+    openFindBar();
+  }
+}
+
+findInput.addEventListener('input', () => {
+  if (findInput.value) {
+    findInActive(findInput.value, 'findNext');
+  } else {
+    findCount.textContent = '';
+    const wv = getActiveWebview();
+    if (wv) {
+      try { wv.stopFindInPage('clearSelection'); } catch {}
+    }
+  }
+});
+
+findInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (e.shiftKey) findPrevious(); else findNext();
+  } else if (e.key === 'Escape') {
+    closeFindBar();
+  }
+});
+
+findNextBtn.addEventListener('click', findNext);
+findPrevBtn.addEventListener('click', findPrevious);
+findCloseBtn.addEventListener('click', closeFindBar);
+
+document.addEventListener('keydown', (e) => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && (e.key === 'f' || e.key === 'F')) {
+    e.preventDefault();
+    openFindBar();
+  } else if (e.key === 'Escape' && !findBar.classList.contains('hidden')) {
+    closeFindBar();
+  } else if (e.key === 'F3' || (mod && e.key.toLowerCase() === 'g')) {
+    if (!findBar.classList.contains('hidden')) {
+      e.preventDefault();
+      if (e.shiftKey) findPrevious(); else findNext();
+    }
+  }
+});
+
+window.electronAPI.onFindCommand((command) => {
+  if (command === 'open') {
+    openFindBar();
+  } else if (command === 'next') {
+    findNext();
+  } else if (command === 'previous') {
+    findPrevious();
+  }
+});
 
 init();

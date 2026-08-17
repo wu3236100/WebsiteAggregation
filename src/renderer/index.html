@@ -23,7 +23,15 @@
   </div>
 
   <!-- Webview container -->
-  <div id="webview-container"></div>
+  <div id="webview-container">
+    <div id="find-bar" class="hidden">
+      <input id="find-input" type="text" placeholder="在页面中查找" autocomplete="off">
+      <span id="find-count"></span>
+      <button id="find-prev" title="上一个 (Shift+Enter)">▲</button>
+      <button id="find-next" title="下一个 (Enter)">▼</button>
+      <button id="find-close" title="关闭 (Esc)">✕</button>
+    </div>
+  </div>
 
   <script src="renderer.js"></script>
 </body>
