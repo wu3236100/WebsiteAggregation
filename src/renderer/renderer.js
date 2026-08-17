@@ -182,21 +182,12 @@ function updateDropdownMenu() {
 
   const settingsItem = document.createElement('div');
   settingsItem.className = 'dropdown-item dropdown-settings';
-  settingsItem.textContent = '⚙ 设置站点';
+  settingsItem.textContent = '⚙ 设置';
   settingsItem.addEventListener('click', () => {
     openSettingsDialog();
     dropdownMenu.classList.add('hidden');
   });
   dropdownMenu.appendChild(settingsItem);
-
-  const proxyItem = document.createElement('div');
-  proxyItem.className = 'dropdown-item dropdown-settings';
-  proxyItem.textContent = '🌐 代理设置';
-  proxyItem.addEventListener('click', () => {
-    openProxyDialog();
-    dropdownMenu.classList.add('hidden');
-  });
-  dropdownMenu.appendChild(proxyItem);
 
   btnDropdown.style.display = 'flex';
 }
@@ -298,7 +289,7 @@ function openSettingsDialog() {
   const header = document.createElement('div');
   header.className = 'modal-header';
   const title = document.createElement('span');
-  title.textContent = '站点管理';
+  title.textContent = '设置';
   const closeBtn = document.createElement('button');
   closeBtn.className = 'modal-close';
   closeBtn.textContent = '✕';
@@ -306,12 +297,29 @@ function openSettingsDialog() {
   header.appendChild(title);
   header.appendChild(closeBtn);
 
+  // Tab bar
+  const tabBar = document.createElement('div');
+  tabBar.className = 'settings-tabs';
+  const siteTabBtn = document.createElement('button');
+  siteTabBtn.className = 'settings-tab active';
+  siteTabBtn.textContent = '站点设置';
+  const proxyTabBtn = document.createElement('button');
+  proxyTabBtn.className = 'settings-tab';
+  proxyTabBtn.textContent = '代理设置';
+  tabBar.appendChild(siteTabBtn);
+  tabBar.appendChild(proxyTabBtn);
+
   // Body
   const body = document.createElement('div');
   body.className = 'modal-body';
 
+  const siteView = document.createElement('div');
+  const proxyView = document.createElement('div');
+  proxyView.classList.add('hidden');
+
+  // --- 站点设置 ---
   function renderSiteList() {
-    body.innerHTML = '';
+    siteView.innerHTML = '';
 
     const table = document.createElement('div');
     table.className = 'site-table';
@@ -473,7 +481,7 @@ function openSettingsDialog() {
       table.appendChild(row);
     });
 
-    body.appendChild(table);
+    siteView.appendChild(table);
 
     // Add site button
     const addBtn = document.createElement('button');
@@ -545,59 +553,12 @@ function openSettingsDialog() {
       nameInput.focus();
     });
 
-    body.appendChild(addBtn);
+    siteView.appendChild(addBtn);
   }
 
   renderSiteList();
 
-  // Footer with save button
-  const footer = document.createElement('div');
-  footer.className = 'modal-footer';
-  const saveAllBtn = document.createElement('button');
-  saveAllBtn.className = 'btn-save-all';
-  saveAllBtn.textContent = '保存并关闭';
-  saveAllBtn.addEventListener('click', async () => {
-    await window.electronAPI.saveAppConfig(currentConfig);
-    overlay.remove();
-    refreshUI();
-  });
-  footer.appendChild(saveAllBtn);
-
-  modal.appendChild(header);
-  modal.appendChild(body);
-  modal.appendChild(footer);
-  overlay.appendChild(modal);
-
-  // Close on overlay click
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.remove();
-  });
-
-  document.body.appendChild(overlay);
-}
-
-function openProxyDialog() {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-container';
-  modal.style.width = '420px';
-
-  const header = document.createElement('div');
-  header.className = 'modal-header';
-  const title = document.createElement('span');
-  title.textContent = '代理设置';
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'modal-close';
-  closeBtn.textContent = '✕';
-  closeBtn.addEventListener('click', () => overlay.remove());
-  header.appendChild(title);
-  header.appendChild(closeBtn);
-
-  const body = document.createElement('div');
-  body.className = 'modal-body';
-
+  // --- 代理设置 ---
   const proxy = currentConfig.proxy || {};
   const enableInput = document.createElement('input');
   enableInput.type = 'checkbox';
@@ -649,14 +610,35 @@ function openProxyDialog() {
   hint.textContent = '启用后所有网页（webview）都会通过该 HTTP 代理访问。';
   form.appendChild(hint);
 
-  body.appendChild(form);
+  proxyView.appendChild(form);
 
+  body.appendChild(siteView);
+  body.appendChild(proxyView);
+
+  // Tab switching
+  function switchTab(name) {
+    if (name === 'site') {
+      siteTabBtn.classList.add('active');
+      proxyTabBtn.classList.remove('active');
+      siteView.classList.remove('hidden');
+      proxyView.classList.add('hidden');
+    } else {
+      proxyTabBtn.classList.add('active');
+      siteTabBtn.classList.remove('active');
+      proxyView.classList.remove('hidden');
+      siteView.classList.add('hidden');
+    }
+  }
+  siteTabBtn.addEventListener('click', () => switchTab('site'));
+  proxyTabBtn.addEventListener('click', () => switchTab('proxy'));
+
+  // Footer with save button
   const footer = document.createElement('div');
   footer.className = 'modal-footer';
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'btn-save-all';
-  saveBtn.textContent = '保存';
-  saveBtn.addEventListener('click', async () => {
+  const saveAllBtn = document.createElement('button');
+  saveAllBtn.className = 'btn-save-all';
+  saveAllBtn.textContent = '保存';
+  saveAllBtn.addEventListener('click', async () => {
     const port = parseInt(portInput.value, 10);
     currentConfig.proxy = {
       enabled: enableInput.checked,
@@ -669,13 +651,15 @@ function openProxyDialog() {
     overlay.remove();
     refreshUI();
   });
-  footer.appendChild(saveBtn);
+  footer.appendChild(saveAllBtn);
 
   modal.appendChild(header);
+  modal.appendChild(tabBar);
   modal.appendChild(body);
   modal.appendChild(footer);
   overlay.appendChild(modal);
 
+  // Close on overlay click
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.remove();
   });
