@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, session } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -53,6 +53,75 @@ async function applyProxy() {
     session.defaultSession.removeAllListeners('login');
     console.log('[Proxy] HTTP 代理已禁用');
   }
+}
+
+// 为所有 <webview> 添加右键菜单（Electron 默认没有）
+function setupWebviewContextMenu() {
+  app.on('web-contents-created', (_event, contents) => {
+    if (contents.getType() !== 'webview') return;
+
+    contents.on('context-menu', (event, params) => {
+      const template = [];
+
+      if (params.isEditable) {
+        template.push({ role: 'undo', label: '撤销' });
+        template.push({ role: 'redo', label: '重做' });
+        template.push({ type: 'separator' });
+        template.push({ role: 'cut', label: '剪切' });
+        template.push({ role: 'copy', label: '复制' });
+        template.push({ role: 'paste', label: '粘贴' });
+        template.push({ role: 'selectAll', label: '全选' });
+      } else if (params.selectionText && params.selectionText.trim()) {
+        template.push({ role: 'copy', label: '复制' });
+        template.push({ role: 'selectAll', label: '全选' });
+      }
+
+      if (params.linkURL) {
+        if (template.length > 0) template.push({ type: 'separator' });
+        template.push({ role: 'copyLink', label: '复制链接地址' });
+      }
+
+      if (params.mediaType === 'image') {
+        if (template.length > 0) template.push({ type: 'separator' });
+        template.push({
+          label: '图片另存为…',
+          click: () => contents.downloadURL(params.srcURL),
+        });
+        template.push({
+          label: '复制图片',
+          click: () => contents.copyImageAt(params.x, params.y),
+        });
+      }
+
+      template.push({ type: 'separator' });
+      template.push({ role: 'back', label: '后退' });
+      template.push({ role: 'forward', label: '前进' });
+      template.push({ role: 'reload', label: '重新加载' });
+
+      const win = BrowserWindow.fromWebContents(contents);
+      if (win) {
+        Menu.buildFromTemplate(template).popup({ window: win });
+      }
+    });
+  });
+}
+
+// 启用下载：弹出系统保存对话框
+function setupDownloads() {
+  session.defaultSession.on('will-download', (event, item) => {
+    item.setSaveDialogOptions({
+      title: '保存文件',
+      defaultPath: path.join(app.getPath('downloads'), item.getFilename()),
+      buttonLabel: '保存',
+    });
+    item.once('done', (_e, state) => {
+      if (state === 'completed') {
+        console.log(`[Download] 已保存: ${item.getSavePath()}`);
+      } else {
+        console.log(`[Download] 未完成: ${state}`);
+      }
+    });
+  });
 }
 
 function loadWindowState() {
@@ -134,6 +203,9 @@ app.whenReady().then(async () => {
   // =====================================================================
 
   await applyProxy();
+
+  setupWebviewContextMenu();
+  setupDownloads();
 
   createWindow();
 
